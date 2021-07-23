@@ -24,16 +24,12 @@ try:
 
     headers = {'client-id': client_id, 'Authorization': 'Bearer ' + getAccessToken()}
 
-
-
-
     def getUserInput():
         username = str(input("Enter a twitch channel: "))
         while username == type(str):
             print('Invalid input, please try again.')
             username = str(input("Enter a twitch channel: "))
         return username
-
 
     def getUserId(username):
         print('Getting user ID for ' + username + '...')
@@ -42,11 +38,11 @@ try:
         jsonGetUserId = respGetUserId.json().get('data')[0]
         # print(json.dumps(jsonGetUserId, indent=4))  # Dump whole Jsonc
         # print(jsonGetUserId.get('id')) # Print only the user ID
-        print('Found ID ' + str(jsonGetUserId.get('id')) + ' for ' + username + '!\n')
+        print('Found ID ' + str(jsonGetUserId.get('id')) + ' for ' + username + '!')
         return jsonGetUserId.get('id')
     
-    def getUserTotalFollowers(username):
-        request = 'https://api.twitch.tv/helix/users/follows?to_id=' + str(getUserId(username)) + '&first=1'
+    def getUserTotalFollowers(userId):
+        request = 'https://api.twitch.tv/helix/users/follows?to_id=' + str(userId) + '&first=1'
         response = requests.get(request, headers=headers)
         jsonResponse = response.json().get('total')
         return jsonResponse
@@ -55,29 +51,35 @@ try:
         id = getUserId(username)
         pagination = ''
         print('Looking up ' + username + '\'s followers...')
-        totalFollowers = getUserTotalFollowers(username)
+        totalFollowers = getUserTotalFollowers(id)
         i = 0
-        f = open(username + ".txt", "w")
+        # f = open(username + ".json", "w")
         while i <= (math.floor(totalFollowers / 100)*100):
             request = 'https://api.twitch.tv/helix/users/follows?to_id=' + id + '&first=100' + pagination
             response = requests.get(request, headers=headers)
-            json = response.json().get('data')
+            jsonResp = response.json().get('data')
             pagination = '&after=' + str(response.json().get('pagination').get('cursor'))
-            
-            for user in json:
-                f.write(str({
-                    "id" : user.get('from_id'),
-                    "user_login" : user.get('from_login'),
-                    "followed_at" : user.get('followed_at')
-                    }))
-                f.write("\n")
+            for user in jsonResp:
+                data = {
+                "id" : user.get('from_id'),
+                "user_login" : user.get('from_login'),
+                "followed_at" : user.get('followed_at')
+                }
+                with open(username + ".json", "a", encoding='utf-8') as f:
+                    json.dump(data, f)
+                    f.write('\n')
+
+                # f.write(str({
+                #     "id" : user.get('from_id'),
+                #     "user_login" : user.get('from_login'),
+                #     "followed_at" : user.get('followed_at')
+                #     }))
+                # f.write("\n")
                 i += 1
             print('Found ' + str(i) + ' followers for ' + username + '...')
         print('Writing total followers of ' + str(totalFollowers) + ' to file...')
-        # f.write('\nTotal followers: ' + str(totalFollowers))
-        # f.write('\nTotal time: ' + str(datetime.datetime.now() - startTime))
         f.close()
-        print(file_len(username + ".txt"))
+        
         
 
     def file_len(file_name):
@@ -85,6 +87,7 @@ try:
         with open(file_name) as f:
             for i, l in enumerate(f):
                 pass
+        print("Total: " + str(i + 1))
         return i + 1
 
     def followerPlacement(username, file):
@@ -94,30 +97,39 @@ try:
             datafile = temp_f.readlines()
         for line in datafile:
             i += 1
-            if username in line:
+            if "\"" + username + "\"" in line:
                 print("Found user " + username + " in " + file)
-                return literal_eval(line), i # The string is found
-        return False  # The string does not exist in the file
+                fileLine = literal_eval(line), i # The string is found
+                break
+        # return False  # The string does not exist in the file
+        fileTotalLines = file_len(file)
+        fileUserLogin = fileLine[0]["user_login"]
+        fileFollowedAt = fileLine[0]["followed_at"]
+
+        delta = fileTotalLines - i
+
+        data = {
+            "follower" : fileUserLogin,
+            "following" : file[:-4],
+            "date" : fileFollowedAt,
+            "n" : delta,
+            "total" : fileTotalLines,
+        }
+        print(data)
+        with open("follows.json","a") as outfile:
+            json.dump(data, outfile)
+            outfile.write('\n')
 
 
 
-
-
-    def main():
-        getUserFollows(getUserInput())
-
-
-
-
-
-    def calcNthPlace():
-        lineDict, lineNumber = followerPlacement("'voiid'", "launders.txt")
-        totalLines = file_len("launders.txt")
-        lineUsername = lineDict['user_login']
-        lineFollowed = lineDict['followed_at']
-        nth = totalLines - lineNumber
-        return lineUsername + " followed Sodapoppin at x and is the 1234th follower"
         
+    def main():
+        channelName = getUserInput()
+        getUserFollows(channelName)
+        searchUser = getUserInput()
+        followerPlacement(searchUser, channelName + ".json")
+
+    main()
 
     print(datetime.datetime.now() - startTime)
 except HTTPError as http_err:
