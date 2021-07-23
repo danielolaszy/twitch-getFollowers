@@ -1,5 +1,6 @@
 from dotenv import load_dotenv  # pip install python-dotenv
 from ast import literal_eval # used to convert str to dict
+import csv
 import json
 import pprint 
 from requests.exceptions import HTTPError
@@ -24,11 +25,18 @@ try:
 
     headers = {'client-id': client_id, 'Authorization': 'Bearer ' + getAccessToken()}
 
-    def getUserInput():
+    def getFollowing():
         username = str(input("Enter a twitch channel: "))
         while username == type(str):
             print('Invalid input, please try again.')
             username = str(input("Enter a twitch channel: "))
+        return username
+
+    def getFollower():
+        username = str(input("Channel to filter: "))
+        while username == type(str):
+            print('Invalid input, please try again.')
+            username = str(input("Channel to filter: "))
         return username
 
     def getUserId(username):
@@ -68,13 +76,6 @@ try:
                 with open(username + ".json", "a", encoding='utf-8') as f:
                     json.dump(data, f)
                     f.write('\n')
-
-                # f.write(str({
-                #     "id" : user.get('from_id'),
-                #     "user_login" : user.get('from_login'),
-                #     "followed_at" : user.get('followed_at')
-                #     }))
-                # f.write("\n")
                 i += 1
             print('Found ' + str(i) + ' followers for ' + username + '...')
         print('Writing total followers of ' + str(totalFollowers) + ' to file...')
@@ -87,7 +88,7 @@ try:
         with open(file_name) as f:
             for i, l in enumerate(f):
                 pass
-        print("Total: " + str(i + 1))
+        print("Found a total number of " + str(i + 1) + " lines in " + file_name)
         return i + 1
 
     def followerPlacement(username, file):
@@ -101,33 +102,41 @@ try:
                 print("Found user " + username + " in " + file)
                 fileLine = literal_eval(line), i # The string is found
                 break
-        # return False  # The string does not exist in the file
         fileTotalLines = file_len(file)
         fileUserLogin = fileLine[0]["user_login"]
         fileFollowedAt = fileLine[0]["followed_at"]
 
-        delta = fileTotalLines - i
+        delta = (fileTotalLines - i)
 
         data = {
             "follower" : fileUserLogin,
             "following" : file[:-4],
             "date" : fileFollowedAt,
-            "n" : delta,
+            "n" : delta + 1,
             "total" : fileTotalLines,
         }
-        print(data)
-        with open("follows.json","a") as outfile:
-            json.dump(data, outfile)
-            outfile.write('\n')
+        print(username + " is #" + str(delta + 1) + " follower of " + file[:-4] + "\n")
+        with open("follows.json","a") as f:
+            json.dump(data, f)
+            f.write('\n')
 
-
+    def readChannelsFile():
+        try:
+            with open('channels.csv') as f:
+                reader = csv.reader(f)
+                data = list(reader)
+            return data[0]
+        except:
+            print("Failed to read channels.csv, make sure you are in the right directory.")
 
         
     def main():
-        channelName = getUserInput()
-        getUserFollows(channelName)
-        searchUser = getUserInput()
-        followerPlacement(searchUser, channelName + ".json")
+        channels = readChannelsFile()
+        searchUser = getFollower()
+        for channel in channels:
+            # channelName = getFollowing()
+            getUserFollows(channel)
+            followerPlacement(searchUser, channel + ".json")
 
     main()
 
