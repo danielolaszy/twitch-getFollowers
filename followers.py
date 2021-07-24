@@ -65,23 +65,28 @@ try:
         while i <= (math.floor(totalFollowers / 100)*100):
             request = 'https://api.twitch.tv/helix/users/follows?to_id=' + id + '&first=100' + pagination
             response = requests.get(request, headers=headers)
-            jsonResp = response.json().get('data')
-            pagination = '&after=' + str(response.json().get('pagination').get('cursor'))
-            for user in jsonResp:
-                data = {
-                "id" : user.get('from_id'),
-                "user_login" : user.get('from_login'),
-                "followed_at" : user.get('followed_at')
-                }
-                with open(username + ".json", "a", encoding='utf-8') as f:
-                    json.dump(data, f)
-                    f.write('\n')
-                i += 1
-            print('Found ' + str(i) + ' followers for ' + username + '...')
+            responseHeaders = response.headers['Content-Type']
+            if responseHeaders == "text/html":
+                print("Response header content type is 'text/html'")
+                continue
+            else:
+                jsonResp = response.json().get('data')
+                # print("\n")
+                pagination = '&after=' + str(response.json().get('pagination').get('cursor'))
+                for user in jsonResp:
+                    data = {
+                    "id" : user.get('from_id'),
+                    "user_login" : user.get('from_login'),
+                    "followed_at" : user.get('followed_at')
+                    }
+                    with open(username + ".json", "a", encoding='utf-8') as f:
+                        json.dump(data, f)
+                        f.write('\n')
+                    i += 1
+                print('Found ' + str(i) + ' followers for ' + username + '...')
+
         print('Writing total followers of ' + str(totalFollowers) + ' to file...')
         f.close()
-        
-        
 
     def file_len(file_name):
         print("Counting total lines in " + file_name)
@@ -110,12 +115,12 @@ try:
 
         data = {
             "follower" : fileUserLogin,
-            "following" : file[:-4],
+            "following" : file[:-5],
             "date" : fileFollowedAt,
             "n" : delta + 1,
             "total" : fileTotalLines,
         }
-        print(username + " is #" + str(delta + 1) + " follower of " + file[:-4] + "\n")
+        print(username + " is follower #" + str(delta + 1) + " of " + file[:-4] + "\n")
         with open("follows.json","a") as f:
             json.dump(data, f)
             f.write('\n')
