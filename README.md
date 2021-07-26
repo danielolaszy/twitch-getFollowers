@@ -4,7 +4,7 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://github.com/Voiidv2/twitch-getFollowers)
 
-This project allows the user to input a list of channels as a `channels.csv` file and get all the users that follow the channels in the file
+This project allows the user to input a list of channels into a `channels.csv` file and get all the users that follow the channels in the file.
 
 ## Getting Started
 
