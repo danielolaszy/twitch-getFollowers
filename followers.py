@@ -2,7 +2,6 @@ from dotenv import load_dotenv  # pip install python-dotenv
 from ast import literal_eval # used to convert str to dict
 import csv
 import json
-import pprint 
 from requests.exceptions import HTTPError
 import requests  # pip install requests
 import os
