@@ -3,6 +3,7 @@ import datetime
 import json
 import math
 import os
+import sys
 from ast import literal_eval  # used to convert str to dict
 
 import requests  # pip install requests
@@ -28,6 +29,7 @@ def getAccessToken():
         print("Got access token:", access_token)
         return access_token
     except requests.exceptions.HTTPError as e:
+        print("Failed on getAccessToken")
         print(e)
 
 
@@ -37,38 +39,50 @@ headers = {
 }
 
 
-def getFollowing():
-    username = str(input("Enter a twitch channel: "))
-    while username == type(str):
-        print("Invalid input, please try again.")
-        username = str(input("Enter a twitch channel: "))
-    return username
+# def getFollowing():
+#     try:
+#         username = str(input("Enter a twitch channel: "))
+#         return username
+#     except Exception as e:
+#         print("Failed to get twitch channel.", e)
 
 
 def getFollower():
-    username = str(input("Channel to filter: "))
-    while username == type(str):
-        print("Invalid input, please try again.")
+    try:
+        print("Specify a channel to find among the followers.")
         username = str(input("Channel to filter: "))
-    return username
+        return username
+    except Exception as e:
+        print("Failed on getFollower")
+        print(e)
 
 
 def getUserId(username):
     print("Getting user ID for " + str(username) + "...")
     reqGetUserId = "https://api.twitch.tv/helix/users?login=" + str(username)
     respGetUserId = requests.get(reqGetUserId, headers=headers)
-    jsonGetUserId = respGetUserId.json().get("data")[0]
-    # print(json.dumps(jsonGetUserId, indent=4))  # Dump whole Jsonc
-    # print(jsonGetUserId.get('id')) # Print only the user ID
-    print("Found ID " + str(jsonGetUserId.get("id")) + " for " + str(username) + "!")
-    return jsonGetUserId.get("id")
+    try:
+        respGetUserId.raise_for_status()
+        jsonGetUserId = respGetUserId.json().get("data")[0]
+        # print(json.dumps(jsonGetUserId, indent=4))  # Dump whole Jsonc
+        # print(jsonGetUserId.get('id')) # Print only the user ID
+        print("Found ID " + str(jsonGetUserId.get("id")) + " for " + str(username) + "!")
+        return jsonGetUserId.get("id")
+    except requests.exceptions.HTTPError as e:
+        print("Failed on getUserId")
+        print(e)
 
 
 def getUserTotalFollowers(userId):
     request = "https://api.twitch.tv/helix/users/follows?to_id=" + str(userId) + "&first=1"
     response = requests.get(request, headers=headers)
-    jsonResponse = response.json().get("total")
-    return jsonResponse
+    try:
+        response.raise_for_status()
+        jsonResponse = response.json().get("total")
+        return jsonResponse
+    except requests.exceptions.HTTPError as e:
+        print("Failed on getUserTotalFollowers")
+        print(e)
 
 
 def getUserFollows(username):
@@ -145,17 +159,21 @@ def followerPlacement(username, file):
 
 
 def readChannelsFile():
-    try:
-        with open("channels.csv") as f:
-            reader = csv.reader(f)
-            data = list(reader)
-        return data[0]
-    except:
-        print("Failed to read channels.csv, make sure you are in the right directory.")
+    with open("channels.csv") as f:
+        reader = csv.reader(f)
+        data = list(reader)
+    return data[0]
 
 
 def main():
-    channels = readChannelsFile()
+    try:
+        channels = readChannelsFile()
+    except:
+        print("Failed to read channels.csv")
+        print("- Make sure channels.csv exists and isn't empty.")
+        print("- Make sure you are in the right directory.")
+        sys.exit(1)
+
     searchUser = getFollower()
     for channel in channels:
         # channelName = getFollowing()
@@ -165,4 +183,4 @@ def main():
 
 main()
 
-print(datetime.datetime.now() - startTime)
+print(datetime.datetime.now() - startTime)  # Check runtime
