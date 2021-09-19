@@ -19,11 +19,16 @@ client_secret = str(os.getenv("CLIENT_SECRET"))
 
 
 def getAccessToken():
+    """
+    Request and return an access token.
+
+    This function uses the request module to get a Twitch access token, and check for the status code of the request via raise_for_status().
+    """
     print("Getting access token...")
     request = "https://id.twitch.tv/oauth2/token?client_id=" + client_id + "&client_secret=" + client_secret + "&grant_type=client_credentials"
     response = requests.post(request)
     try:
-        response.raise_for_status()
+        response.raise_for_status()  # Check status code
         jsonResponse = response.json()
         access_token = jsonResponse.get("access_token")
         print("Got access token:", access_token)
